@@ -18,7 +18,13 @@ app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseCors("AllowAll");
 
-app.MapHub<ChessHub>("/chesshub");
+app.UseRouting();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHub<ChessHub>("/chesshub");
+});
 
 app.Run();
+
 
