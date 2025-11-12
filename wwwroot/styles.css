@@ -23,11 +23,74 @@ body {
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
 }
 
-h1 {
-    text-align: center;
-    color: #333;
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+h1 {
+    color: #333;
     font-size: 2.5em;
+    margin: 0;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+#username-display {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #667eea;
+}
+
+.btn-secondary {
+    background-color: #95a5a6;
+    padding: 8px 20px;
+    font-size: 0.9em;
+}
+
+.btn-secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.opponent-name {
+    font-size: 1.1em;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.move-count {
+    font-size: 1em;
+    color: #777;
+    margin-top: 5px;
+}
+
+.game-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+}
+
+.btn-danger:hover {
+    background-color: #c0392b;
+}
+
+.btn-info {
+    background-color: #3498db;
+}
+
+.btn-info:hover {
+    background-color: #2980b9;
 }
 
 .game-info {

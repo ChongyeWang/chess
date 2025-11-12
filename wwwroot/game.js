@@ -15,6 +15,15 @@ const playerColorDiv = document.getElementById('player-color');
 const turnIndicatorDiv = document.getElementById('turn-indicator');
 const gameContainer = document.getElementById('game-container');
 const chessBoardDiv = document.getElementById('chess-board');
+const usernameDisplay = document.getElementById('username-display');
+const opponentNameDiv = document.getElementById('opponent-name');
+const logoutBtn = document.getElementById('logout-btn');
+const endGameBtn = document.getElementById('end-game-btn');
+const moveCountDiv = document.getElementById('move-count');
+
+let currentUsername = localStorage.getItem('username');
+let currentUserId = null;
+let moveCount = 0;
 
 function initializeConnection() {
     connection = new signalR.HubConnectionBuilder()
@@ -32,6 +41,15 @@ function initializeConnection() {
         gameContainer.style.display = 'block';
         gameBoard = data.board;
         currentTurn = data.currentTurn;
+        moveCount = 0;
+        
+        const opponentName = playerColor === 'white' ? data.blackPlayer : data.whitePlayer;
+        opponentNameDiv.textContent = `Playing against: ${opponentName}`;
+        moveCountDiv.textContent = `Moves: 0`;
+        
+        endGameBtn.style.display = 'inline-block';
+        findGameBtn.style.display = 'none';
+        
         renderBoard(data.board);
         updateTurnIndicator();
     });
@@ -46,9 +64,21 @@ function initializeConnection() {
         gameBoard[data.toRow][data.toCol] = data.piece;
         gameBoard[data.fromRow][data.fromCol] = '';
         currentTurn = data.currentTurn;
+        moveCount = data.moveNumber || moveCount + 1;
+        moveCountDiv.textContent = `Moves: ${moveCount}`;
         renderBoard(gameBoard);
         selectedSquare = null;
         updateTurnIndicator();
+    });
+    
+    connection.on("GameEnded", (data) => {
+        statusDiv.textContent = `Game ended: ${data.reason}`;
+        statusDiv.style.color = '#e74c3c';
+        endGameBtn.style.display = 'none';
+        findGameBtn.style.display = 'inline-block';
+        findGameBtn.disabled = false;
+        gameContainer.style.display = 'none';
+        alert(`Game Over!\nReason: ${data.reason}\nTotal Moves: ${data.totalMoves}`);
     });
 
     connection.on("OpponentDisconnected", () => {
@@ -75,9 +105,22 @@ function initializeConnection() {
 
 findGameBtn.addEventListener('click', () => {
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
-        connection.invoke("FindGame")
+        connection.invoke("FindGame", currentUsername, currentUserId)
             .catch(err => console.error(err));
         findGameBtn.disabled = true;
+    }
+});
+
+logoutBtn.addEventListener('click', async () => {
+    await fetch('/api/logout');
+    localStorage.removeItem('username');
+    window.location.href = '/login.html';
+});
+
+endGameBtn.addEventListener('click', () => {
+    if (confirm('Are you sure you want to end this game?')) {
+        connection.invoke("EndGame", "Player ended game")
+            .catch(err => console.error(err));
     }
 });
 
@@ -172,7 +215,29 @@ function updateTurnIndicator() {
     }
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+    if (!currentUsername) {
+        window.location.href = '/login.html';
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/me', { credentials: 'include' });
+        if (response.ok) {
+            const data = await response.json();
+            currentUserId = data.userId;
+            console.log('User ID:', currentUserId);
+        } else {
+            window.location.href = '/login.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error fetching user info:', error);
+        window.location.href = '/login.html';
+        return;
+    }
+    
+    usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
     initializeConnection();
 });
 

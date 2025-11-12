@@ -8,15 +8,27 @@
 </head>
 <body>
     <div class="container">
-        <h1>Multiplayer Chess Game</h1>
+        <div class="header">
+            <h1>Multiplayer Chess Game</h1>
+            <div class="user-info">
+                <span id="username-display"></span>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
         
         <div class="game-info">
             <div class="status-section">
                 <div id="status" class="status">Click "Find Game" to start</div>
                 <div id="player-color" class="player-color"></div>
+                <div id="opponent-name" class="opponent-name"></div>
                 <div id="turn-indicator" class="turn-indicator"></div>
+                <div id="move-count" class="move-count"></div>
             </div>
-            <button id="find-game-btn" class="btn btn-primary">Find Game</button>
+            <div class="game-buttons">
+                <button id="find-game-btn" class="btn btn-primary">Find Game</button>
+                <button id="end-game-btn" class="btn btn-danger" style="display: none;">End Game</button>
+                <button id="history-btn" class="btn btn-info" onclick="window.location.href='/history.html'">View History</button>
+            </div>
         </div>
 
         <div id="game-container" class="game-container" style="display: none;">

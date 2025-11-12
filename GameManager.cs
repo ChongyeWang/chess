@@ -5,12 +5,14 @@ public class GameManager
     private ConcurrentDictionary<string, GameRoom> rooms = new ConcurrentDictionary<string, GameRoom>();
     private ConcurrentDictionary<string, string> playerRooms = new ConcurrentDictionary<string, string>();
 
-    public GameRoom CreateRoom(string playerId)
+    public GameRoom CreateRoom(string playerId, string playerName, string userDbId)
     {
         var roomId = Guid.NewGuid().ToString();
         var room = new GameRoom();
         room.RoomId = roomId;
-        room.WhitePlayer = playerId;
+        room.WhitePlayerId = playerId;
+        room.WhitePlayerName = playerName;
+        room.WhiteUserDbId = userDbId;
         room.Board = InitializeBoard();
         room.CurrentTurn = "white";
 
@@ -19,14 +21,16 @@ public class GameManager
         return room;
     }
 
-    public GameRoom JoinRoom(string roomId, string playerId)
+    public GameRoom JoinRoom(string roomId, string playerId, string playerName, string userDbId)
     {
         if (rooms.ContainsKey(roomId))
         {
             var room = rooms[roomId];
-            if (room.BlackPlayer == null)
+            if (room.BlackPlayerId == null)
             {
-                room.BlackPlayer = playerId;
+                room.BlackPlayerId = playerId;
+                room.BlackPlayerName = playerName;
+                room.BlackUserDbId = userDbId;
                 playerRooms[playerId] = roomId;
                 return room;
             }
@@ -34,13 +38,13 @@ public class GameManager
         return null;
     }
 
-    public GameRoom FindAvailableRoom(string playerId)
+    public GameRoom FindAvailableRoom(string playerId, string playerName, string userDbId)
     {
         foreach (var room in rooms.Values)
         {
-            if (room.BlackPlayer == null)
+            if (room.BlackPlayerId == null)
             {
-                return JoinRoom(room.RoomId, playerId);
+                return JoinRoom(room.RoomId, playerId, playerName, userDbId);
             }
         }
         return null;
@@ -87,9 +91,21 @@ public class GameManager
 public class GameRoom
 {
     public string RoomId { get; set; }
-    public string WhitePlayer { get; set; }
-    public string BlackPlayer { get; set; }
+    public string WhitePlayerId { get; set; }
+    public string BlackPlayerId { get; set; }
+    public string WhitePlayerName { get; set; }
+    public string BlackPlayerName { get; set; }
+    public string WhiteUserDbId { get; set; }
+    public string BlackUserDbId { get; set; }
     public string[][] Board { get; set; }
     public string CurrentTurn { get; set; }
+    public List<MoveRecord> Moves { get; set; }
+    public DateTime StartTime { get; set; }
+    
+    public GameRoom()
+    {
+        Moves = new List<MoveRecord>();
+        StartTime = DateTime.UtcNow;
+    }
 }
 
