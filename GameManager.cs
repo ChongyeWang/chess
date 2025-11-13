@@ -190,6 +190,12 @@ public class GameRoom
     public string RoomId { get; set; }
     public string WhitePlayer { get; set; }
     public string BlackPlayer { get; set; }
+    public string WhitePlayerId { get; set; }
+    public string BlackPlayerId { get; set; }
+    public string WhitePlayerName { get; set; }
+    public string BlackPlayerName { get; set; }
+    public string WhiteUserDbId { get; set; }
+    public string BlackUserDbId { get; set; }
     public List<chessPiece> Board { get; set; } = new List<chessPiece>();
     public string CurrentTurn { get; set; }
     public List<MoveRecord> Moves { get; set; }

@@ -65,6 +65,9 @@ function initializeConnection() {
     });
 
     connection.on("GameStart", (data) => {
+        console.log("GameStart received:", data);
+        console.log("Board data:", data.board);
+        
         statusDiv.textContent = "Game started!";
         gameContainer.style.display = 'block';
         gameBoard = data.board;
@@ -90,11 +93,18 @@ function initializeConnection() {
     });
 
 
-    connection.on("UpdateBoard", (updatedBoard, currentTurnFromServer) => {
-        gameBoard = updatedBoard;
-        currentTurn = currentTurnFromServer;
-        selectedSquare = null;
+    connection.on("PieceMoved", (data) => {
+        if (data.board) {
+            gameBoard = data.board;
+        } else {
+            gameBoard[data.toRow][data.toCol] = data.piece;
+            gameBoard[data.fromRow][data.fromCol] = '';
+        }
+        currentTurn = data.currentTurn;
+        moveCount = data.moveNumber || moveCount + 1;
+        moveCountDiv.textContent = `Moves: ${moveCount}`;
         renderBoard(gameBoard);
+        selectedSquare = null;
         updateTurnIndicator();
     });
 
@@ -159,7 +169,13 @@ function setupEventListeners() {
 }
 
 function renderBoard(board) {
+    console.log("Rendering board:", board);
     chessBoardDiv.innerHTML = '';
+    
+    if (!board) {
+        console.error("No board data");
+        return;
+    }
 
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
@@ -174,13 +190,21 @@ function renderBoard(board) {
                 square.classList.add('dark');
             }
 
-            const piece = board.find(p => p.xPosition === col && p.yPosition === row);
+            let piece = null;
+            let pieceType = '';
+            
+            if (Array.isArray(board)) {
+                pieceType = board[row] && board[row][col] ? board[row][col] : '';
+            } else if (board.find) {
+                piece = board.find(p => p.xPosition === col && p.yPosition === row);
+                if (piece) {
+                    pieceType = piece.color === "white" ? piece.type.toUpperCase() : piece.type.toLowerCase();
+                }
+            }
 
-
-            if (piece) {
-                const key = piece.color === "white" ? piece.type.toUpperCase() : piece.type.toLowerCase();
-                square.textContent = PIECES[key];
-                if (piece.color === "white") {
+            if (pieceType && PIECES[pieceType]) {
+                square.textContent = PIECES[pieceType];
+                if (pieceType === pieceType.toUpperCase()) {
                     square.style.color = '#ffffff';
                 } else {
                     square.style.color = '#000000';
@@ -199,10 +223,10 @@ function handleSquareClick(row, col) {
         return;
     }
 
-    const piece = gameBoard.find(p => p.xPosition === col && p.yPosition === row);;
+    const pieceType = gameBoard[row] && gameBoard[row][col] ? gameBoard[row][col] : '';
 
     if (selectedSquare === null) {
-        if (piece && isPieceOwnedByPlayer(piece)) {
+        if (pieceType && isPieceOwnedByPlayer(pieceType)) {
             selectedSquare = { row, col };
             highlightSquare(row, col);
         }
@@ -216,8 +240,12 @@ function handleSquareClick(row, col) {
     }
 }
 
-function isPieceOwnedByPlayer(piece) {
-    return piece.color.toLowerCase() === playerColor.toLowerCase();
+function isPieceOwnedByPlayer(pieceType) {
+    if (playerColor === 'white') {
+        return pieceType === pieceType.toUpperCase();
+    } else {
+        return pieceType === pieceType.toLowerCase();
+    }
 }
 
 function highlightSquare(row, col) {

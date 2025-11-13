@@ -10,13 +10,37 @@ public class ChessHub : Hub
         gameManager = gm;
         mongoService = mongo;
     }
+    
+    private string[][] ConvertBoardToArray(List<chessPiece> pieces)
+    {
+        var board = new string[8][];
+        for (int i = 0; i < 8; i++)
+        {
+            board[i] = new string[8];
+            for (int j = 0; j < 8; j++)
+            {
+                board[i][j] = "";
+            }
+        }
+        
+        foreach (var piece in pieces)
+        {
+            if (piece.yPosition >= 0 && piece.yPosition < 8 && 
+                piece.xPosition >= 0 && piece.xPosition < 8)
+            {
+                board[piece.yPosition][piece.xPosition] = piece.type;
+            }
+        }
+        
+        return board;
+    }
 
     public override async Task OnConnectedAsync()
     {
         await base.OnConnectedAsync();
     }
 
-    public async Task FindGame()
+    public async Task FindGame(string username, string userId)
     {
         string playerId = Context.ConnectionId;
         var room = gameManager.FindAvailableRoom(playerId, username, userId);
@@ -25,18 +49,22 @@ public class ChessHub : Hub
         {
             room = gameManager.CreateRoom(playerId, username, userId);
             room.WhitePlayer = playerId;
+            room.WhitePlayerId = playerId;
+            room.WhitePlayerName = username;
+            room.WhiteUserDbId = userId;
 
             await Clients.Caller.SendAsync("WaitingForOpponent", new { roomId = room.RoomId });
             return;
         }
 
-
         room.BlackPlayer = playerId;
+        room.BlackPlayerId = playerId;
+        room.BlackPlayerName = username;
+        room.BlackUserDbId = userId;
         room.CurrentTurn = "white";
 
         await Groups.AddToGroupAsync(room.WhitePlayer, room.RoomId);
         await Groups.AddToGroupAsync(room.BlackPlayer, room.RoomId);
-
 
         await Clients.Client(room.WhitePlayer).SendAsync("AssignColor", "white");
         await Clients.Client(room.BlackPlayer).SendAsync("AssignColor", "black");
@@ -44,9 +72,9 @@ public class ChessHub : Hub
         await Clients.Group(room.RoomId).SendAsync("GameStart", new
         {
             roomId = room.RoomId,
-            whitePlayer = room.WhitePlayer,
-            blackPlayer = room.BlackPlayer,
-            board = room.Board,
+            whitePlayer = room.WhitePlayerName,
+            blackPlayer = room.BlackPlayerName,
+            board = ConvertBoardToArray(room.Board),
             currentTurn = room.CurrentTurn
         });
     }
@@ -103,13 +131,33 @@ public class ChessHub : Hub
 
         piece.xPosition = toC;
         piece.yPosition = toR;
+        
+        var moveRecord = new MoveRecord
+        {
+            MoveNumber = room.Moves.Count + 1,
+            Player = playerColor,
+            FromRow = fromR,
+            FromCol = fromC,
+            ToRow = toR,
+            ToCol = toC,
+            Piece = piece.type,
+            Timestamp = DateTime.UtcNow
+        };
+        room.Moves.Add(moveRecord);
 
         room.CurrentTurn = (room.CurrentTurn == "white") ? "black" : "white";
 
-        await Clients.Group(room.RoomId).SendAsync("UpdateBoard", room.Board, room.CurrentTurn);
-
-
-
+        await Clients.Group(room.RoomId).SendAsync("PieceMoved", new
+        {
+            fromRow = fromR,
+            fromCol = fromC,
+            toRow = toR,
+            toCol = toC,
+            piece = piece.type,
+            currentTurn = room.CurrentTurn,
+            moveNumber = moveRecord.MoveNumber,
+            board = ConvertBoardToArray(room.Board)
+        });
     }
 
     public async Task EndGame(string reason)
@@ -145,10 +193,10 @@ public class ChessHub : Hub
             gameId = gameHistory.Id
         });
 
-        gameManager.RemovePlayer(room.WhitePlayerId);
-        if (room.BlackPlayerId != null)
+        gameManager.RemovePlayer(room.WhitePlayer);
+        if (room.BlackPlayer != null)
         {
-            gameManager.RemovePlayer(room.BlackPlayerId);
+            gameManager.RemovePlayer(room.BlackPlayer);
         }
     }
 
