@@ -131,7 +131,13 @@ app.MapGet("/api/history/{gameId}", async (string gameId, MongoDbService mongoSe
     return Results.Ok(game);
 });
 
-app.MapHub<ChessHub>("/chesshub");
+app.UseRouting();
+
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHub<ChessHub>("/chesshub");
+});
 
 app.Run();
+
 

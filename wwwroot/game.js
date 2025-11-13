@@ -52,10 +52,12 @@ let currentUserId = null;
 let moveCount = 0;
 
 function initializeConnection() {
+
     connection = new signalR.HubConnectionBuilder()
         .withUrl("/chesshub")
         .withAutomaticReconnect()
         .build();
+
 
     connection.on("WaitingForOpponent", (data) => {
         statusDiv.textContent = "Waiting for opponent...";
@@ -68,17 +70,18 @@ function initializeConnection() {
         gameBoard = data.board;
         currentTurn = data.currentTurn;
         moveCount = 0;
-        
+
         const opponentName = playerColor === 'white' ? data.blackPlayer : data.whitePlayer;
         opponentNameDiv.textContent = `Playing against: ${opponentName}`;
         moveCountDiv.textContent = `Moves: 0`;
-        
+
         endGameBtn.style.display = 'inline-block';
         findGameBtn.style.display = 'none';
-        
+
         renderBoard(data.board);
         updateTurnIndicator();
     });
+
 
     connection.on("AssignColor", (color) => {
         playerColor = color;
@@ -86,17 +89,15 @@ function initializeConnection() {
         playerColorDiv.className = `player-color ${color}`;
     });
 
-    connection.on("PieceMoved", (data) => {
-        gameBoard[data.toRow][data.toCol] = data.piece;
-        gameBoard[data.fromRow][data.fromCol] = '';
-        currentTurn = data.currentTurn;
-        moveCount = data.moveNumber || moveCount + 1;
-        moveCountDiv.textContent = `Moves: ${moveCount}`;
-        renderBoard(gameBoard);
+
+    connection.on("UpdateBoard", (updatedBoard, currentTurnFromServer) => {
+        gameBoard = updatedBoard;
+        currentTurn = currentTurnFromServer;
         selectedSquare = null;
+        renderBoard(gameBoard);
         updateTurnIndicator();
     });
-    
+
     connection.on("GameEnded", (data) => {
         statusDiv.textContent = `Game ended: ${data.reason}`;
         statusDiv.style.color = '#e74c3c';
@@ -106,6 +107,8 @@ function initializeConnection() {
         gameContainer.style.display = 'none';
         alert(`Game Over!\nReason: ${data.reason}\nTotal Moves: ${data.totalMoves}`);
     });
+
+
 
     connection.on("OpponentDisconnected", () => {
         statusDiv.textContent = "Opponent disconnected. Please refresh to find a new game.";
@@ -118,15 +121,18 @@ function initializeConnection() {
         alert(message);
     });
 
+
     connection.start()
         .then(() => {
-            console.log("Connected to server");
             statusDiv.textContent = "Connected! Click 'Find Game' to start.";
         })
         .catch(err => {
-            console.error(err);
             statusDiv.textContent = "Connection failed. Please refresh the page.";
         });
+
+
+
+
 }
 
 function setupEventListeners() {
@@ -154,32 +160,35 @@ function setupEventListeners() {
 
 function renderBoard(board) {
     chessBoardDiv.innerHTML = '';
-    
+
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
             const square = document.createElement('div');
             square.className = 'square';
             square.dataset.row = row;
             square.dataset.col = col;
-            
+
             if ((row + col) % 2 === 0) {
                 square.classList.add('light');
             } else {
                 square.classList.add('dark');
             }
-            
-            const piece = board[row][col];
+
+            const piece = board.find(p => p.xPosition === col && p.yPosition === row);
+
+
             if (piece) {
-                square.textContent = PIECES[piece];
-                if (piece === piece.toUpperCase()) {
+                const key = piece.color === "white" ? piece.type.toUpperCase() : piece.type.toLowerCase();
+                square.textContent = PIECES[key];
+                if (piece.color === "white") {
                     square.style.color = '#ffffff';
                 } else {
                     square.style.color = '#000000';
                 }
             }
-            
+
             square.addEventListener('click', () => handleSquareClick(row, col));
-            
+
             chessBoardDiv.appendChild(square);
         }
     }
@@ -190,8 +199,8 @@ function handleSquareClick(row, col) {
         return;
     }
 
-    const piece = gameBoard[row][col];
-    
+    const piece = gameBoard.find(p => p.xPosition === col && p.yPosition === row);;
+
     if (selectedSquare === null) {
         if (piece && isPieceOwnedByPlayer(piece)) {
             selectedSquare = { row, col };
@@ -208,11 +217,7 @@ function handleSquareClick(row, col) {
 }
 
 function isPieceOwnedByPlayer(piece) {
-    if (playerColor === 'white') {
-        return piece === piece.toUpperCase();
-    } else {
-        return piece === piece.toLowerCase();
-    }
+    return piece.color.toLowerCase() === playerColor.toLowerCase();
 }
 
 function highlightSquare(row, col) {
@@ -224,17 +229,22 @@ function highlightSquare(row, col) {
 
 function movePiece(fromRow, fromCol, toRow, toCol) {
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
-        connection.invoke("MovePiece", 
-            fromRow.toString(), 
-            fromCol.toString(), 
-            toRow.toString(), 
+        connection.invoke("MovePiece",
+            fromRow.toString(),
+            fromCol.toString(),
+            toRow.toString(),
             toCol.toString()
-        ).catch(err => console.error(err));
+        ).catch(err => console.error("❌ MovePiece invoke failed:", err));
+    } else {
+        console.warn("⚠️ Not connected to SignalR yet!");
     }
 }
 
+
+
+
 function updateTurnIndicator() {
-    if (currentTurn === playerColor) {
+    if (currentTurn.toLowerCase() === playerColor.toLowerCase()) {
         turnIndicatorDiv.textContent = "Your turn";
         turnIndicatorDiv.className = "turn-indicator your-turn";
     } else {
@@ -253,7 +263,7 @@ window.addEventListener('load', async () => {
         window.location.href = '/login.html';
         return;
     }
-    
+
     try {
         const response = await fetch('/api/me', { credentials: 'include' });
         if (response.ok) {
@@ -269,7 +279,7 @@ window.addEventListener('load', async () => {
         window.location.href = '/login.html';
         return;
     }
-    
+
     usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
     setupEventListeners();
     initializeConnection();

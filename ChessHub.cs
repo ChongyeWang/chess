@@ -11,34 +11,44 @@ public class ChessHub : Hub
         mongoService = mongo;
     }
 
-    public async Task FindGame(string username, string userId)
+    public override async Task OnConnectedAsync()
+    {
+        await base.OnConnectedAsync();
+    }
+
+    public async Task FindGame()
     {
         string playerId = Context.ConnectionId;
-        
         var room = gameManager.FindAvailableRoom(playerId, username, userId);
-        
+
         if (room == null)
         {
             room = gameManager.CreateRoom(playerId, username, userId);
-            await Clients.Caller.SendAsync("WaitingForOpponent", new { roomId = room.RoomId });
-        }
-        else
-        {
-            await Groups.AddToGroupAsync(Context.ConnectionId, room.RoomId);
-            await Groups.AddToGroupAsync(room.WhitePlayerId, room.RoomId);
-            
-            await Clients.Group(room.RoomId).SendAsync("GameStart", new
-            {
-                roomId = room.RoomId,
-                whitePlayer = room.WhitePlayerName,
-                blackPlayer = room.BlackPlayerName,
-                board = room.Board,
-                currentTurn = room.CurrentTurn
-            });
+            room.WhitePlayer = playerId;
 
-            await Clients.Client(room.WhitePlayerId).SendAsync("AssignColor", "white");
-            await Clients.Client(room.BlackPlayerId).SendAsync("AssignColor", "black");
+            await Clients.Caller.SendAsync("WaitingForOpponent", new { roomId = room.RoomId });
+            return;
         }
+
+
+        room.BlackPlayer = playerId;
+        room.CurrentTurn = "white";
+
+        await Groups.AddToGroupAsync(room.WhitePlayer, room.RoomId);
+        await Groups.AddToGroupAsync(room.BlackPlayer, room.RoomId);
+
+
+        await Clients.Client(room.WhitePlayer).SendAsync("AssignColor", "white");
+        await Clients.Client(room.BlackPlayer).SendAsync("AssignColor", "black");
+
+        await Clients.Group(room.RoomId).SendAsync("GameStart", new
+        {
+            roomId = room.RoomId,
+            whitePlayer = room.WhitePlayer,
+            blackPlayer = room.BlackPlayer,
+            board = room.Board,
+            currentTurn = room.CurrentTurn
+        });
     }
 
     public async Task MovePiece(string fromRow, string fromCol, string toRow, string toCol)
@@ -52,10 +62,11 @@ public class ChessHub : Hub
             return;
         }
 
-        string playerColor = playerId == room.WhitePlayerId ? "white" : "black";
+        string playerColor = (playerId == room.WhitePlayer) ? "white" : "black";
+
         if (playerColor != room.CurrentTurn)
         {
-            await Clients.Caller.SendAsync("Error", "Not your turn");
+            await Clients.Caller.SendAsync("Error", "Not your turn!");
             return;
         }
 
@@ -64,37 +75,43 @@ public class ChessHub : Hub
         int toR = int.Parse(toRow);
         int toC = int.Parse(toCol);
 
-        string piece = room.Board[fromR][fromC];
-        room.Board[toR][toC] = piece;
-        room.Board[fromR][fromC] = "";
-
-        var moveRecord = new MoveRecord
+        var piece = room.Board.FirstOrDefault(p => p.xPosition == fromC && p.yPosition == fromR);
+        if (piece == null)
         {
-            MoveNumber = room.Moves.Count + 1,
-            Player = playerColor,
-            FromRow = fromR,
-            FromCol = fromC,
-            ToRow = toR,
-            ToCol = toC,
-            Piece = piece,
-            Timestamp = DateTime.UtcNow
-        };
-        room.Moves.Add(moveRecord);
+            await Clients.Caller.SendAsync("Error", "No piece at that position");
+            return;
+        }
 
-        room.CurrentTurn = room.CurrentTurn == "white" ? "black" : "white";
-
-        await Clients.Group(room.RoomId).SendAsync("PieceMoved", new
+        if (piece.color != playerColor)
         {
-            fromRow = fromR,
-            fromCol = fromC,
-            toRow = toR,
-            toCol = toC,
-            piece = piece,
-            currentTurn = room.CurrentTurn,
-            moveNumber = moveRecord.MoveNumber
-        });
+            await Clients.Caller.SendAsync("Error", "You can't move your opponent's piece!");
+            return;
+        }
+
+        bool isValidMove = gameManager.isMoveValid(piece, toC, toR, room.Board);
+        if (!isValidMove)
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid move");
+            return;
+        }
+
+        var captured = room.Board.FirstOrDefault(p => p.xPosition == toC && p.yPosition == toR);
+        if (captured != null)
+        {
+            room.Board.Remove(captured);
+        }
+
+        piece.xPosition = toC;
+        piece.yPosition = toR;
+
+        room.CurrentTurn = (room.CurrentTurn == "white") ? "black" : "white";
+
+        await Clients.Group(room.RoomId).SendAsync("UpdateBoard", room.Board, room.CurrentTurn);
+
+
+
     }
-    
+
     public async Task EndGame(string reason)
     {
         string playerId = Context.ConnectionId;
@@ -134,6 +151,8 @@ public class ChessHub : Hub
             gameManager.RemovePlayer(room.BlackPlayerId);
         }
     }
+
+
 
     public override async Task OnDisconnectedAsync(Exception exception)
     {
