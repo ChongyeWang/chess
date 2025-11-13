@@ -8,16 +8,22 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    margin: 0;
+    /* remove flex centering */
 }
 
-.auth-container {
+..auth-container {
     width: 100%;
     max-width: 400px;
     padding: 20px;
+
+    /* Add flex centering just for the login box */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: calc(100vh - 70px); /* adjust for navbar height */
 }
+
 
 .auth-box {
     background: white;
