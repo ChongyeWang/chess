@@ -106,5 +106,20 @@ function calculateDuration(start, end) {
     return `${minutes}m ${seconds}s`;
 }
 
-window.addEventListener('load', loadHistory);
+async function logout() {
+    await fetch('/api/logout');
+    localStorage.removeItem('username');
+    window.location.href = '/login.html';
+}
+
+window.addEventListener('load', () => {
+    const username = localStorage.getItem('username');
+    if (username) {
+        const navUsername = document.getElementById('nav-username');
+        if (navUsername) {
+            navUsername.textContent = username;
+        }
+    }
+    loadHistory();
+});
 

@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Game History - Chess</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
     <style>
+        body {
+            padding-top: 80px !important;
+        }
+        
         .history-container {
             max-width: 1000px;
             margin: 20px auto;
@@ -74,9 +79,19 @@
     </style>
 </head>
 <body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <h2 class="logo">Chess Online</h2>
+        </div>
+        <div class="nav-right">
+            <a href="/index.html">Home</a>
+            <a href="/history.html">History</a>
+            <span id="nav-username" style="color: white; font-weight: bold;"></span>
+            <button id="logout-btn-nav" class="btn btn-secondary small-btn" onclick="logout()">Logout</button>
+        </div>
+    </nav>
+    
     <div class="container history-container">
-        <button class="btn btn-secondary back-btn" onclick="window.location.href='/index.html'">← Back to Game</button>
-        
         <h1>Your Game History</h1>
         
         <div id="history-list"></div>

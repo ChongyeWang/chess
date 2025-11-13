@@ -9,17 +9,43 @@ let currentTurn = 'white';
 let selectedSquare = null;
 let gameBoard = null;
 
-const findGameBtn = document.getElementById('find-game-btn');
-const statusDiv = document.getElementById('status');
-const playerColorDiv = document.getElementById('player-color');
-const turnIndicatorDiv = document.getElementById('turn-indicator');
-const gameContainer = document.getElementById('game-container');
-const chessBoardDiv = document.getElementById('chess-board');
-const usernameDisplay = document.getElementById('username-display');
-const opponentNameDiv = document.getElementById('opponent-name');
-const logoutBtn = document.getElementById('logout-btn');
-const endGameBtn = document.getElementById('end-game-btn');
-const moveCountDiv = document.getElementById('move-count');
+let findGameBtn, statusDiv, playerColorDiv, turnIndicatorDiv, gameContainer, chessBoardDiv;
+let usernameDisplay, opponentNameDiv, logoutBtn, endGameBtn, moveCountDiv;
+
+function initializeElements() {
+    findGameBtn = document.getElementById('find-game-btn');
+    statusDiv = document.getElementById('status');
+    playerColorDiv = document.getElementById('player-color');
+    turnIndicatorDiv = document.getElementById('turn-indicator');
+    gameContainer = document.getElementById('game-container');
+    chessBoardDiv = document.getElementById('chess-board');
+    usernameDisplay = document.getElementById('username-display');
+    opponentNameDiv = document.getElementById('opponent-name');
+    logoutBtn = document.getElementById('logout-btn');
+    endGameBtn = document.getElementById('end-game-btn');
+    moveCountDiv = document.getElementById('move-count');
+    
+    const navUsername = document.getElementById('nav-username');
+    const logoutBtnNav = document.getElementById('logout-btn-nav');
+    
+    if (navUsername && currentUsername) {
+        navUsername.textContent = currentUsername;
+    }
+    
+    if (logoutBtnNav) {
+        logoutBtnNav.addEventListener('click', async () => {
+            await fetch('/api/logout');
+            localStorage.removeItem('username');
+            window.location.href = '/login.html';
+        });
+    }
+    
+    if (!findGameBtn || !statusDiv || !usernameDisplay) {
+        console.error('Some page elements are missing!');
+        return false;
+    }
+    return true;
+}
 
 let currentUsername = localStorage.getItem('username');
 let currentUserId = null;
@@ -103,26 +129,28 @@ function initializeConnection() {
         });
 }
 
-findGameBtn.addEventListener('click', () => {
-    if (connection && connection.state === signalR.HubConnectionState.Connected) {
-        connection.invoke("FindGame", currentUsername, currentUserId)
-            .catch(err => console.error(err));
-        findGameBtn.disabled = true;
-    }
-});
+function setupEventListeners() {
+    findGameBtn.addEventListener('click', () => {
+        if (connection && connection.state === signalR.HubConnectionState.Connected) {
+            connection.invoke("FindGame", currentUsername, currentUserId)
+                .catch(err => console.error(err));
+            findGameBtn.disabled = true;
+        }
+    });
 
-logoutBtn.addEventListener('click', async () => {
-    await fetch('/api/logout');
-    localStorage.removeItem('username');
-    window.location.href = '/login.html';
-});
+    logoutBtn.addEventListener('click', async () => {
+        await fetch('/api/logout');
+        localStorage.removeItem('username');
+        window.location.href = '/login.html';
+    });
 
-endGameBtn.addEventListener('click', () => {
-    if (confirm('Are you sure you want to end this game?')) {
-        connection.invoke("EndGame", "Player ended game")
-            .catch(err => console.error(err));
-    }
-});
+    endGameBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to end this game?')) {
+            connection.invoke("EndGame", "Player ended game")
+                .catch(err => console.error(err));
+        }
+    });
+}
 
 function renderBoard(board) {
     chessBoardDiv.innerHTML = '';
@@ -216,6 +244,11 @@ function updateTurnIndicator() {
 }
 
 window.addEventListener('load', async () => {
+    if (!initializeElements()) {
+        console.error('Failed to initialize page elements');
+        return;
+    }
+    
     if (!currentUsername) {
         window.location.href = '/login.html';
         return;
@@ -238,6 +271,7 @@ window.addEventListener('load', async () => {
     }
     
     usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
+    setupEventListeners();
     initializeConnection();
 });
 
