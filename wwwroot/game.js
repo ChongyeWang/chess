@@ -9,12 +9,47 @@ let currentTurn = 'white';
 let selectedSquare = null;
 let gameBoard = null;
 
-const findGameBtn = document.getElementById('find-game-btn');
-const statusDiv = document.getElementById('status');
-const playerColorDiv = document.getElementById('player-color');
-const turnIndicatorDiv = document.getElementById('turn-indicator');
-const gameContainer = document.getElementById('game-container');
-const chessBoardDiv = document.getElementById('chess-board');
+let findGameBtn, statusDiv, playerColorDiv, turnIndicatorDiv, gameContainer, chessBoardDiv;
+let usernameDisplay, opponentNameDiv, logoutBtn, endGameBtn, moveCountDiv;
+
+function initializeElements() {
+    findGameBtn = document.getElementById('find-game-btn');
+    statusDiv = document.getElementById('status');
+    playerColorDiv = document.getElementById('player-color');
+    turnIndicatorDiv = document.getElementById('turn-indicator');
+    gameContainer = document.getElementById('game-container');
+    chessBoardDiv = document.getElementById('chess-board');
+    usernameDisplay = document.getElementById('username-display');
+    opponentNameDiv = document.getElementById('opponent-name');
+    logoutBtn = document.getElementById('logout-btn');
+    endGameBtn = document.getElementById('end-game-btn');
+    moveCountDiv = document.getElementById('move-count');
+
+    const navUsername = document.getElementById('nav-username');
+    const logoutBtnNav = document.getElementById('logout-btn-nav');
+
+    if (navUsername && currentUsername) {
+        navUsername.textContent = currentUsername;
+    }
+
+    if (logoutBtnNav) {
+        logoutBtnNav.addEventListener('click', async () => {
+            await fetch('/api/logout');
+            localStorage.removeItem('username');
+            window.location.href = '/login.html';
+        });
+    }
+
+    if (!findGameBtn || !statusDiv || !usernameDisplay) {
+        console.error('Some page elements are missing!');
+        return false;
+    }
+    return true;
+}
+
+let currentUsername = localStorage.getItem('username');
+let currentUserId = null;
+let moveCount = 0;
 
 function initializeConnection() {
 
@@ -34,6 +69,13 @@ function initializeConnection() {
         gameContainer.style.display = 'block';
         gameBoard = data.board;
         currentTurn = data.currentTurn;
+
+        moveCount = 0;
+        const opponentName = playerColor === 'white' ? data.blackPlayer : data.whitePlayer;
+        opponentNameDiv.textContent = `Playing against: ${opponentName}`;
+        moveCountDiv.textContent = `Moves: 0`;
+        endGameBtn.style.display = 'inline-block';
+        findGameBtn.style.display = 'none';
         renderBoard(data.board);
         updateTurnIndicator();
     });
@@ -47,9 +89,12 @@ function initializeConnection() {
 
 
     connection.on("UpdateBoard", (updatedBoard, currentTurnFromServer) => {
+        console.log("Received UpdateBoard:", updatedBoard, "Current turn:", currentTurnFromServer);
         gameBoard = updatedBoard;
         currentTurn = currentTurnFromServer;
+        moveCount = moveCount + 1;
         selectedSquare = null;
+        moveCountDiv.textContent = `Moves: ${moveCount}`;
         renderBoard(gameBoard);
         updateTurnIndicator();
     });
@@ -81,16 +126,38 @@ function initializeConnection() {
 
 }
 
-findGameBtn.addEventListener('click', () => {
-    if (connection && connection.state === signalR.HubConnectionState.Connected) {
-        connection.invoke("FindGame")
-            .catch(err => console.error(err));
-        findGameBtn.disabled = true;
-    }
-});
+function setupEventListeners() {
+    findGameBtn.addEventListener('click', () => {
+        if (connection && connection.state === signalR.HubConnectionState.Connected) {
+            connection.invoke("FindGame", currentUsername, currentUserId)
+                .catch(err => console.error(err));
+            findGameBtn.disabled = true;
+        }
+    });
+
+    logoutBtn.addEventListener('click', async () => {
+        await fetch('/api/logout');
+        localStorage.removeItem('username');
+        window.location.href = '/login.html';
+    });
+
+    endGameBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to end this game?')) {
+            connection.invoke("EndGame", "Player ended game")
+                .catch(err => console.error(err));
+        }
+    });
+}
 
 function renderBoard(board) {
     chessBoardDiv.innerHTML = '';
+
+    if (!board) {
+        console.error("No board data");
+        return;
+    }
+
+    gameBoard = board;
 
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
@@ -105,7 +172,7 @@ function renderBoard(board) {
                 square.classList.add('dark');
             }
 
-            const piece = board.find(p => p.xPosition === col && p.yPosition === row);
+            const piece = gameBoard.find(p => p.xPosition === col && p.yPosition === row);
 
 
             if (piece) {
@@ -159,6 +226,8 @@ function highlightSquare(row, col) {
 }
 
 function movePiece(fromRow, fromCol, toRow, toCol) {
+    console.log("movePiece called:", fromRow, fromCol, "->", toRow, toCol);
+
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
         connection.invoke("MovePiece",
             fromRow.toString(),
@@ -184,7 +253,34 @@ function updateTurnIndicator() {
     }
 }
 
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
+    if (!initializeElements()) {
+        console.error('Failed to initialize page elements');
+        return;
+    }
+
+    if (!currentUsername) {
+        window.location.href = '/login.html';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/me', { credentials: 'include' });
+        if (response.ok) {
+            const data = await response.json();
+            currentUserId = data.userId;
+            console.log('User ID:', currentUserId);
+        } else {
+            window.location.href = '/login.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error fetching user info:', error);
+        window.location.href = '/login.html';
+        return;
+    }
+
+    usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
+    setupEventListeners();
     initializeConnection();
 });
-

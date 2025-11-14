@@ -1,22 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Multiplayer Chess Game</title>
     <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="auth.css">
 </head>
+
 <body>
+    <nav class="navbar">
+        <div class="nav-left">
+            <h2 class="logo">Chess Online</h2>
+        </div>
+        <div class="nav-right">
+            <a href="/index.html">Home</a>
+            <a href="/history.html">History</a>
+            <span id="nav-username" style="color: white; font-weight: bold;"></span>
+            <button id="logout-btn-nav" class="btn btn-secondary small-btn">Logout</button>
+        </div>
+    </nav>
+
     <div class="container">
-        <h1>Multiplayer Chess Game</h1>
-        
+        <div class="header">
+            <h1>Multiplayer Chess Game</h1>
+            <div class="user-info">
+                <span id="username-display"></span>
+                <button id="logout-btn" class="btn btn-secondary">Logout</button>
+            </div>
+        </div>
+
         <div class="game-info">
             <div class="status-section">
                 <div id="status" class="status">Click "Find Game" to start</div>
                 <div id="player-color" class="player-color"></div>
+                <div id="opponent-name" class="opponent-name"></div>
                 <div id="turn-indicator" class="turn-indicator"></div>
+                <div id="move-count" class="move-count"></div>
             </div>
-            <button id="find-game-btn" class="btn btn-primary">Find Game</button>
+            <div class="game-buttons">
+                <button id="find-game-btn" class="btn btn-primary">Find Game</button>
+                <button id="end-game-btn" class="btn btn-danger" style="display: none;">End Game</button>
+                <button id="history-btn" class="btn btn-info" onclick="window.location.href='/history.html'">View
+                    History</button>
+            </div>
         </div>
 
         <div id="game-container" class="game-container" style="display: none;">
@@ -41,5 +69,5 @@
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
     <script src="game.js"></script>
 </body>
-</html>
 
+</html>
