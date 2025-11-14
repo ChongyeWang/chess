@@ -99,7 +99,6 @@ function initializeConnection() {
         selectedSquare = null;
         moveCountDiv.textContent = `Moves: ${moveCount}`;
         renderBoard(gameBoard);
-        selectedSquare = null;
         updateTurnIndicator();
     });
 
@@ -229,77 +228,72 @@ function handleSquareClick(row, col) {
     }
 }
 
-function isPieceOwnedByPlayer(pieceType) {
-    if (playerColor === 'white') {
-        return pieceType === pieceType.toUpperCase();
-    } else {
-        return pieceType === pieceType.toLowerCase();
-    }
-}
+function isPieceOwnedByPlayer(piece) {
+    return piece.color.toLowerCase() === playerColor.toLowerCase();
 
-function highlightSquare(row, col) {
-    renderBoard(gameBoard);
-    const squares = chessBoardDiv.children;
-    const index = row * 8 + col;
-    squares[index].classList.add('selected');
-}
-
-function movePiece(fromRow, fromCol, toRow, toCol) {
-    console.log("movePiece called:", fromRow, fromCol, "->", toRow, toCol);
-
-    if (connection && connection.state === signalR.HubConnectionState.Connected) {
-        connection.invoke("MovePiece",
-            fromRow.toString(),
-            fromCol.toString(),
-            toRow.toString(),
-            toCol.toString()
-        ).catch(err => console.error("❌ MovePiece invoke failed:", err));
-    } else {
-        console.warn("⚠️ Not connected to SignalR yet!");
-    }
-}
-
-
-
-
-function updateTurnIndicator() {
-    if (currentTurn.toLowerCase() === playerColor.toLowerCase()) {
-        turnIndicatorDiv.textContent = "Your turn";
-        turnIndicatorDiv.className = "turn-indicator your-turn";
-    } else {
-        turnIndicatorDiv.textContent = "Opponent's turn";
-        turnIndicatorDiv.className = "turn-indicator opponent-turn";
-    }
-}
-
-window.addEventListener('load', async () => {
-    if (!initializeElements()) {
-        console.error('Failed to initialize page elements');
-        return;
+    function highlightSquare(row, col) {
+        renderBoard(gameBoard);
+        const squares = chessBoardDiv.children;
+        const index = row * 8 + col;
+        squares[index].classList.add('selected');
     }
 
-    if (!currentUsername) {
-        window.location.href = '/login.html';
-        return;
-    }
+    function movePiece(fromRow, fromCol, toRow, toCol) {
+        console.log("movePiece called:", fromRow, fromCol, "->", toRow, toCol);
 
-    try {
-        const response = await fetch('/api/me', { credentials: 'include' });
-        if (response.ok) {
-            const data = await response.json();
-            currentUserId = data.userId;
-            console.log('User ID:', currentUserId);
+        if (connection && connection.state === signalR.HubConnectionState.Connected) {
+            connection.invoke("MovePiece",
+                fromRow.toString(),
+                fromCol.toString(),
+                toRow.toString(),
+                toCol.toString()
+            ).catch(err => console.error("❌ MovePiece invoke failed:", err));
         } else {
+            console.warn("⚠️ Not connected to SignalR yet!");
+        }
+    }
+
+
+
+
+    function updateTurnIndicator() {
+        if (currentTurn.toLowerCase() === playerColor.toLowerCase()) {
+            turnIndicatorDiv.textContent = "Your turn";
+            turnIndicatorDiv.className = "turn-indicator your-turn";
+        } else {
+            turnIndicatorDiv.textContent = "Opponent's turn";
+            turnIndicatorDiv.className = "turn-indicator opponent-turn";
+        }
+    }
+
+    window.addEventListener('load', async () => {
+        if (!initializeElements()) {
+            console.error('Failed to initialize page elements');
+            return;
+        }
+
+        if (!currentUsername) {
             window.location.href = '/login.html';
             return;
         }
-    } catch (error) {
-        console.error('Error fetching user info:', error);
-        window.location.href = '/login.html';
-        return;
-    }
 
-    usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
-    setupEventListeners();
-    initializeConnection();
-});
+        try {
+            const response = await fetch('/api/me', { credentials: 'include' });
+            if (response.ok) {
+                const data = await response.json();
+                currentUserId = data.userId;
+                console.log('User ID:', currentUserId);
+            } else {
+                window.location.href = '/login.html';
+                return;
+            }
+        } catch (error) {
+            console.error('Error fetching user info:', error);
+            window.location.href = '/login.html';
+            return;
+        }
+
+        usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
+        setupEventListeners();
+        initializeConnection();
+    });
