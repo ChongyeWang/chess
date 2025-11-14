@@ -39,7 +39,7 @@ public class GameManager
         return null;
     }
 
-    public GameRoom FindAvailableRoom(string playerId, string playerName, string userDbId)
+    public GameRoom FindAvailableRoom(string playerId, String playerName, string userDbId)
     {
         foreach (var room in rooms.Values)
         {
@@ -207,4 +207,3 @@ public class GameRoom
         StartTime = DateTime.UtcNow;
     }
 }
-

@@ -6,7 +6,7 @@ public class GameHistory
     [BsonId]
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; }
-    
+
     public string WhitePlayerId { get; set; }
     public string BlackPlayerId { get; set; }
     public string WhitePlayerName { get; set; }
@@ -29,4 +29,3 @@ public class MoveRecord
     public string Piece { get; set; }
     public DateTime Timestamp { get; set; }
 }
-

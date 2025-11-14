@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="auth.css">
 </head>
+
 <body>
     <nav class="navbar">
         <div class="nav-left">
@@ -19,7 +21,7 @@
             <button id="logout-btn-nav" class="btn btn-secondary small-btn">Logout</button>
         </div>
     </nav>
-    
+
     <div class="container">
         <div class="header">
             <h1>Multiplayer Chess Game</h1>
@@ -28,7 +30,7 @@
                 <button id="logout-btn" class="btn btn-secondary">Logout</button>
             </div>
         </div>
-        
+
         <div class="game-info">
             <div class="status-section">
                 <div id="status" class="status">Click "Find Game" to start</div>
@@ -40,7 +42,8 @@
             <div class="game-buttons">
                 <button id="find-game-btn" class="btn btn-primary">Find Game</button>
                 <button id="end-game-btn" class="btn btn-danger" style="display: none;">End Game</button>
-                <button id="history-btn" class="btn btn-info" onclick="window.location.href='/history.html'">View History</button>
+                <button id="history-btn" class="btn btn-info" onclick="window.location.href='/history.html'">View
+                    History</button>
             </div>
         </div>
 
@@ -66,5 +69,5 @@
     <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
     <script src="game.js"></script>
 </body>
-</html>
 
+</html>

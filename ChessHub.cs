@@ -5,34 +5,11 @@ public class ChessHub : Hub
     private GameManager gameManager;
     private MongoDbService mongoService;
 
+
     public ChessHub(GameManager gm, MongoDbService mongo)
     {
         gameManager = gm;
         mongoService = mongo;
-    }
-    
-    private string[][] ConvertBoardToArray(List<chessPiece> pieces)
-    {
-        var board = new string[8][];
-        for (int i = 0; i < 8; i++)
-        {
-            board[i] = new string[8];
-            for (int j = 0; j < 8; j++)
-            {
-                board[i][j] = "";
-            }
-        }
-        
-        foreach (var piece in pieces)
-        {
-            if (piece.yPosition >= 0 && piece.yPosition < 8 && 
-                piece.xPosition >= 0 && piece.xPosition < 8)
-            {
-                board[piece.yPosition][piece.xPosition] = piece.type;
-            }
-        }
-        
-        return board;
     }
 
     public override async Task OnConnectedAsync()
@@ -74,7 +51,7 @@ public class ChessHub : Hub
             roomId = room.RoomId,
             whitePlayer = room.WhitePlayerName,
             blackPlayer = room.BlackPlayerName,
-            board = ConvertBoardToArray(room.Board),
+            board = room.Board,
             currentTurn = room.CurrentTurn
         });
     }
@@ -103,7 +80,10 @@ public class ChessHub : Hub
         int toR = int.Parse(toRow);
         int toC = int.Parse(toCol);
 
+
+
         var piece = room.Board.FirstOrDefault(p => p.xPosition == fromC && p.yPosition == fromR);
+
         if (piece == null)
         {
             await Clients.Caller.SendAsync("Error", "No piece at that position");
@@ -131,7 +111,7 @@ public class ChessHub : Hub
 
         piece.xPosition = toC;
         piece.yPosition = toR;
-        
+
         var moveRecord = new MoveRecord
         {
             MoveNumber = room.Moves.Count + 1,
@@ -147,18 +127,12 @@ public class ChessHub : Hub
 
         room.CurrentTurn = (room.CurrentTurn == "white") ? "black" : "white";
 
-        await Clients.Group(room.RoomId).SendAsync("PieceMoved", new
-        {
-            fromRow = fromR,
-            fromCol = fromC,
-            toRow = toR,
-            toCol = toC,
-            piece = piece.type,
-            currentTurn = room.CurrentTurn,
-            moveNumber = moveRecord.MoveNumber,
-            board = ConvertBoardToArray(room.Board)
-        });
+        await Clients.Group(room.RoomId).SendAsync("UpdateBoard", room.Board, room.CurrentTurn);
+
+
+
     }
+
 
     public async Task EndGame(string reason)
     {
@@ -199,7 +173,6 @@ public class ChessHub : Hub
             gameManager.RemovePlayer(room.BlackPlayer);
         }
     }
-
 
 
     public override async Task OnDisconnectedAsync(Exception exception)

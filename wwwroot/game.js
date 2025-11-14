@@ -24,14 +24,14 @@ function initializeElements() {
     logoutBtn = document.getElementById('logout-btn');
     endGameBtn = document.getElementById('end-game-btn');
     moveCountDiv = document.getElementById('move-count');
-    
+
     const navUsername = document.getElementById('nav-username');
     const logoutBtnNav = document.getElementById('logout-btn-nav');
-    
+
     if (navUsername && currentUsername) {
         navUsername.textContent = currentUsername;
     }
-    
+
     if (logoutBtnNav) {
         logoutBtnNav.addEventListener('click', async () => {
             await fetch('/api/logout');
@@ -39,7 +39,7 @@ function initializeElements() {
             window.location.href = '/login.html';
         });
     }
-    
+
     if (!findGameBtn || !statusDiv || !usernameDisplay) {
         console.error('Some page elements are missing!');
         return false;
@@ -67,20 +67,18 @@ function initializeConnection() {
     connection.on("GameStart", (data) => {
         console.log("GameStart received:", data);
         console.log("Board data:", data.board);
-        
+
         statusDiv.textContent = "Game started!";
         gameContainer.style.display = 'block';
         gameBoard = data.board;
         currentTurn = data.currentTurn;
-        moveCount = 0;
 
+        moveCount = 0;
         const opponentName = playerColor === 'white' ? data.blackPlayer : data.whitePlayer;
         opponentNameDiv.textContent = `Playing against: ${opponentName}`;
         moveCountDiv.textContent = `Moves: 0`;
-
         endGameBtn.style.display = 'inline-block';
         findGameBtn.style.display = 'none';
-
         renderBoard(data.board);
         updateTurnIndicator();
     });
@@ -93,15 +91,12 @@ function initializeConnection() {
     });
 
 
-    connection.on("PieceMoved", (data) => {
-        if (data.board) {
-            gameBoard = data.board;
-        } else {
-            gameBoard[data.toRow][data.toCol] = data.piece;
-            gameBoard[data.fromRow][data.fromCol] = '';
-        }
-        currentTurn = data.currentTurn;
-        moveCount = data.moveNumber || moveCount + 1;
+    connection.on("UpdateBoard", (updatedBoard, currentTurnFromServer) => {
+        console.log("Received UpdateBoard:", updatedBoard, "Current turn:", currentTurnFromServer);
+        gameBoard = updatedBoard;
+        currentTurn = currentTurnFromServer;
+        moveCount = moveCount + 1;
+        selectedSquare = null;
         moveCountDiv.textContent = `Moves: ${moveCount}`;
         renderBoard(gameBoard);
         selectedSquare = null;
@@ -171,11 +166,13 @@ function setupEventListeners() {
 function renderBoard(board) {
     console.log("Rendering board:", board);
     chessBoardDiv.innerHTML = '';
-    
+
     if (!board) {
         console.error("No board data");
         return;
     }
+
+    gameBoard = board;
 
     for (let row = 0; row < 8; row++) {
         for (let col = 0; col < 8; col++) {
@@ -190,21 +187,13 @@ function renderBoard(board) {
                 square.classList.add('dark');
             }
 
-            let piece = null;
-            let pieceType = '';
-            
-            if (Array.isArray(board)) {
-                pieceType = board[row] && board[row][col] ? board[row][col] : '';
-            } else if (board.find) {
-                piece = board.find(p => p.xPosition === col && p.yPosition === row);
-                if (piece) {
-                    pieceType = piece.color === "white" ? piece.type.toUpperCase() : piece.type.toLowerCase();
-                }
-            }
+            const piece = gameBoard.find(p => p.xPosition === col && p.yPosition === row);
 
-            if (pieceType && PIECES[pieceType]) {
-                square.textContent = PIECES[pieceType];
-                if (pieceType === pieceType.toUpperCase()) {
+
+            if (piece) {
+                const key = piece.color === "white" ? piece.type.toUpperCase() : piece.type.toLowerCase();
+                square.textContent = PIECES[key];
+                if (piece.color === "white") {
                     square.style.color = '#ffffff';
                 } else {
                     square.style.color = '#000000';
@@ -256,6 +245,8 @@ function highlightSquare(row, col) {
 }
 
 function movePiece(fromRow, fromCol, toRow, toCol) {
+    console.log("movePiece called:", fromRow, fromCol, "->", toRow, toCol);
+
     if (connection && connection.state === signalR.HubConnectionState.Connected) {
         connection.invoke("MovePiece",
             fromRow.toString(),
@@ -286,7 +277,7 @@ window.addEventListener('load', async () => {
         console.error('Failed to initialize page elements');
         return;
     }
-    
+
     if (!currentUsername) {
         window.location.href = '/login.html';
         return;
@@ -312,4 +303,3 @@ window.addEventListener('load', async () => {
     setupEventListeners();
     initializeConnection();
 });
-

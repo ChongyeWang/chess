@@ -5,23 +5,23 @@ using System.Text;
 public class AuthService
 {
     private MongoDbService mongoService;
-    
+
     public AuthService(MongoDbService mongo)
     {
         mongoService = mongo;
     }
-    
+
     public async Task<User> Register(string username, string password, string email)
     {
         var existingUser = await mongoService.Users
             .Find(u => u.Username == username)
             .FirstOrDefaultAsync();
-            
+
         if (existingUser != null)
         {
             return null;
         }
-        
+
         var user = new User
         {
             Username = username,
@@ -32,28 +32,28 @@ public class AuthService
             Losses = 0,
             Rating = 1200
         };
-        
+
         await mongoService.Users.InsertOneAsync(user);
         return user;
     }
-    
+
     public async Task<User> Login(string username, string password)
     {
         var hashedPassword = HashPassword(password);
         var user = await mongoService.Users
             .Find(u => u.Username == username && u.Password == hashedPassword)
             .FirstOrDefaultAsync();
-            
+
         return user;
     }
-    
+
     public async Task<User> GetUserById(string userId)
     {
         return await mongoService.Users
             .Find(u => u.Id == userId)
             .FirstOrDefaultAsync();
     }
-    
+
     private string HashPassword(string password)
     {
         using (SHA256 sha256 = SHA256.Create())
@@ -68,4 +68,3 @@ public class AuthService
         }
     }
 }
-

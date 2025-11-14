@@ -20,10 +20,10 @@ showLogin.addEventListener('click', (e) => {
 
 loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const username = document.getElementById('login-username').value;
     const password = document.getElementById('login-password').value;
-    
+
     try {
         const response = await fetch('/api/login', {
             method: 'POST',
@@ -32,7 +32,7 @@ loginForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({ username, password })
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             localStorage.setItem('username', data.username);
@@ -47,11 +47,11 @@ loginForm.addEventListener('submit', async (e) => {
 
 registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
-    
+
     const username = document.getElementById('register-username').value;
     const email = document.getElementById('register-email').value;
     const password = document.getElementById('register-password').value;
-    
+
     try {
         const response = await fetch('/api/register', {
             method: 'POST',
@@ -60,7 +60,7 @@ registerForm.addEventListener('submit', async (e) => {
             },
             body: JSON.stringify({ username, email, password })
         });
-        
+
         if (response.ok) {
             const data = await response.json();
             localStorage.setItem('username', data.username);
@@ -73,4 +73,3 @@ registerForm.addEventListener('submit', async (e) => {
         errorMessage.textContent = 'Registration failed. Please try again.';
     }
 });
-

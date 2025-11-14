@@ -3,24 +3,24 @@ async function loadHistory() {
         const response = await fetch('/api/history', {
             credentials: 'include'
         });
-        
+
         if (!response.ok) {
             console.error('Failed to fetch history:', response.status);
             window.location.href = '/login.html';
             return;
         }
-        
+
         const games = await response.json();
         console.log('Games loaded:', games);
-        
+
         const historyList = document.getElementById('history-list');
         const noHistory = document.getElementById('no-history');
-        
+
         if (!games || games.length === 0) {
             noHistory.style.display = 'block';
             return;
         }
-        
+
         games.forEach(game => {
             const card = createGameCard(game);
             historyList.appendChild(card);
@@ -34,10 +34,10 @@ async function loadHistory() {
 function createGameCard(game) {
     const card = document.createElement('div');
     card.className = 'game-card';
-    
+
     const endDate = new Date(game.endTime).toLocaleString();
     const duration = calculateDuration(game.startTime, game.endTime);
-    
+
     card.innerHTML = `
         <div class="game-header">
             <div class="game-players">
@@ -52,15 +52,15 @@ function createGameCard(game) {
         </div>
         <div class="move-list" id="moves-${game.id}"></div>
     `;
-    
+
     card.addEventListener('click', () => toggleMoves(game));
-    
+
     return card;
 }
 
 function toggleMoves(game) {
     const moveList = document.getElementById(`moves-${game.id}`);
-    
+
     if (moveList.style.display === 'none' || !moveList.style.display) {
         if (moveList.children.length === 0) {
             displayMoves(game, moveList);
@@ -76,25 +76,25 @@ function displayMoves(game, container) {
         'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
         'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
     };
-    
+
     const cols = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    
+
     game.moves.forEach(move => {
         const moveItem = document.createElement('div');
         moveItem.className = 'move-item';
-        
+
         const fromPos = `${cols[move.fromCol]}${8 - move.fromRow}`;
         const toPos = `${cols[move.toCol]}${8 - move.toRow}`;
         const piece = PIECES[move.piece] || move.piece;
         const time = new Date(move.timestamp).toLocaleTimeString();
-        
+
         moveItem.innerHTML = `
             <strong>Move ${move.moveNumber}:</strong>
             ${move.player === 'white' ? '⚪' : '⚫'} 
             ${piece} ${fromPos} → ${toPos}
             <span style="color: #999; float: right;">${time}</span>
         `;
-        
+
         container.appendChild(moveItem);
     });
 }
@@ -122,4 +122,3 @@ window.addEventListener('load', () => {
     }
     loadHistory();
 });
-
