@@ -297,3 +297,4 @@ function isPieceOwnedByPlayer(piece) {
         setupEventListeners();
         initializeConnection();
     });
+}
