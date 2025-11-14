@@ -65,9 +65,6 @@ function initializeConnection() {
     });
 
     connection.on("GameStart", (data) => {
-        console.log("GameStart received:", data);
-        console.log("Board data:", data.board);
-
         statusDiv.textContent = "Game started!";
         gameContainer.style.display = 'block';
         gameBoard = data.board;
@@ -100,16 +97,6 @@ function initializeConnection() {
         moveCountDiv.textContent = `Moves: ${moveCount}`;
         renderBoard(gameBoard);
         updateTurnIndicator();
-    });
-
-    connection.on("GameEnded", (data) => {
-        statusDiv.textContent = `Game ended: ${data.reason}`;
-        statusDiv.style.color = '#e74c3c';
-        endGameBtn.style.display = 'none';
-        findGameBtn.style.display = 'inline-block';
-        findGameBtn.disabled = false;
-        gameContainer.style.display = 'none';
-        alert(`Game Over!\nReason: ${data.reason}\nTotal Moves: ${data.totalMoves}`);
     });
 
 
@@ -163,7 +150,6 @@ function setupEventListeners() {
 }
 
 function renderBoard(board) {
-    console.log("Rendering board:", board);
     chessBoardDiv.innerHTML = '';
 
     if (!board) {
@@ -211,10 +197,10 @@ function handleSquareClick(row, col) {
         return;
     }
 
-    const pieceType = gameBoard[row] && gameBoard[row][col] ? gameBoard[row][col] : '';
+    const piece = gameBoard.find(p => p.xPosition === col && p.yPosition === row);;
 
     if (selectedSquare === null) {
-        if (pieceType && isPieceOwnedByPlayer(pieceType)) {
+        if (piece && isPieceOwnedByPlayer(piece)) {
             selectedSquare = { row, col };
             highlightSquare(row, col);
         }
@@ -230,71 +216,71 @@ function handleSquareClick(row, col) {
 
 function isPieceOwnedByPlayer(piece) {
     return piece.color.toLowerCase() === playerColor.toLowerCase();
-
-    function highlightSquare(row, col) {
-        renderBoard(gameBoard);
-        const squares = chessBoardDiv.children;
-        const index = row * 8 + col;
-        squares[index].classList.add('selected');
-    }
-
-    function movePiece(fromRow, fromCol, toRow, toCol) {
-        console.log("movePiece called:", fromRow, fromCol, "->", toRow, toCol);
-
-        if (connection && connection.state === signalR.HubConnectionState.Connected) {
-            connection.invoke("MovePiece",
-                fromRow.toString(),
-                fromCol.toString(),
-                toRow.toString(),
-                toCol.toString()
-            ).catch(err => console.error("❌ MovePiece invoke failed:", err));
-        } else {
-            console.warn("⚠️ Not connected to SignalR yet!");
-        }
-    }
-
-
-
-
-    function updateTurnIndicator() {
-        if (currentTurn.toLowerCase() === playerColor.toLowerCase()) {
-            turnIndicatorDiv.textContent = "Your turn";
-            turnIndicatorDiv.className = "turn-indicator your-turn";
-        } else {
-            turnIndicatorDiv.textContent = "Opponent's turn";
-            turnIndicatorDiv.className = "turn-indicator opponent-turn";
-        }
-    }
-
-    window.addEventListener('load', async () => {
-        if (!initializeElements()) {
-            console.error('Failed to initialize page elements');
-            return;
-        }
-
-        if (!currentUsername) {
-            window.location.href = '/login.html';
-            return;
-        }
-
-        try {
-            const response = await fetch('/api/me', { credentials: 'include' });
-            if (response.ok) {
-                const data = await response.json();
-                currentUserId = data.userId;
-                console.log('User ID:', currentUserId);
-            } else {
-                window.location.href = '/login.html';
-                return;
-            }
-        } catch (error) {
-            console.error('Error fetching user info:', error);
-            window.location.href = '/login.html';
-            return;
-        }
-
-        usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
-        setupEventListeners();
-        initializeConnection();
-    });
 }
+
+function highlightSquare(row, col) {
+    renderBoard(gameBoard);
+    const squares = chessBoardDiv.children;
+    const index = row * 8 + col;
+    squares[index].classList.add('selected');
+}
+
+function movePiece(fromRow, fromCol, toRow, toCol) {
+    console.log("movePiece called:", fromRow, fromCol, "->", toRow, toCol);
+
+    if (connection && connection.state === signalR.HubConnectionState.Connected) {
+        connection.invoke("MovePiece",
+            fromRow.toString(),
+            fromCol.toString(),
+            toRow.toString(),
+            toCol.toString()
+        ).catch(err => console.error("❌ MovePiece invoke failed:", err));
+    } else {
+        console.warn("⚠️ Not connected to SignalR yet!");
+    }
+}
+
+
+
+
+function updateTurnIndicator() {
+    if (currentTurn.toLowerCase() === playerColor.toLowerCase()) {
+        turnIndicatorDiv.textContent = "Your turn";
+        turnIndicatorDiv.className = "turn-indicator your-turn";
+    } else {
+        turnIndicatorDiv.textContent = "Opponent's turn";
+        turnIndicatorDiv.className = "turn-indicator opponent-turn";
+    }
+}
+
+window.addEventListener('load', async () => {
+    if (!initializeElements()) {
+        console.error('Failed to initialize page elements');
+        return;
+    }
+
+    if (!currentUsername) {
+        window.location.href = '/login.html';
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/me', { credentials: 'include' });
+        if (response.ok) {
+            const data = await response.json();
+            currentUserId = data.userId;
+            console.log('User ID:', currentUserId);
+        } else {
+            window.location.href = '/login.html';
+            return;
+        }
+    } catch (error) {
+        console.error('Error fetching user info:', error);
+        window.location.href = '/login.html';
+        return;
+    }
+
+    usernameDisplay.textContent = `Welcome, ${currentUsername}!`;
+    setupEventListeners();
+    initializeConnection();
+});
