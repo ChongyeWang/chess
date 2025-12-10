@@ -65,8 +65,86 @@
             padding: 15px;
             background: #f8f9fa;
             border-radius: 5px;
-            max-height: 300px;
-            overflow-y: auto;
+        }
+
+        .board-viewer {
+            display: none;
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 5px;
+        }
+
+        .board-navigation {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .nav-btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2em;
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: #5568d3;
+            transform: translateY(-2px);
+        }
+
+        .nav-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        .move-info {
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            color: #555;
+            font-weight: bold;
+        }
+
+        .history-board-container {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+        }
+
+        .history-board {
+            display: grid;
+            grid-template-columns: repeat(8, 60px);
+            grid-template-rows: repeat(8, 60px);
+            border: 3px solid #1a1816;
+            background: #312e2b;
+            border-radius: 5px;
+        }
+
+        .history-square {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 40px;
+            user-select: none;
+        }
+
+        .history-square.light {
+            background-color: #f0d9b5;
+        }
+
+        .history-square.dark {
+            background-color: #b58863;
         }
 
         .move-item {

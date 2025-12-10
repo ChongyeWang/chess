@@ -76,19 +76,7 @@ public class GameManager
 
     private List<chessPiece> InitializeBoard()
     {
-        var pieces = new List<chessPiece>();
-        string[] blackRanks = { "r", "n", "b", "q", "k", "b", "n", "r" };
-        string[] whiteRanks = { "R", "N", "B", "Q", "K", "B", "N", "R" };
-
-        for (int i = 0; i < 8; i++)
-        {
-            pieces.Add(new chessPiece(blackRanks[i], "black", i, 0));
-            pieces.Add(new chessPiece("p", "black", i, 1));
-            pieces.Add(new chessPiece("P", "white", i, 6));
-            pieces.Add(new chessPiece(whiteRanks[i], "white", i, 7));
-        }
-
-        return pieces;
+        return ChessPieceFactory.CreateStandardBoard();
     }
 
     private bool IsOccupied(int x, int y, List<chessPiece> pieces)
@@ -200,10 +188,12 @@ public class GameRoom
     public string CurrentTurn { get; set; }
     public List<MoveRecord> Moves { get; set; }
     public DateTime StartTime { get; set; }
+    public MoveNotifier MoveNotifier { get; set; }
 
     public GameRoom()
     {
         Moves = new List<MoveRecord>();
         StartTime = DateTime.UtcNow;
+        MoveNotifier = new MoveNotifier();
     }
 }
