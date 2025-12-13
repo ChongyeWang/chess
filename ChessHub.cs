@@ -34,16 +34,17 @@ public class ChessHub : Hub
             return;
         }
 
-
         room.BlackPlayer = playerId;
         room.BlackPlayerId = playerId;
         room.BlackPlayerName = username;
         room.BlackUserDbId = userId;
         room.CurrentTurn = "white";
 
+        var moveDisplayObserver = new MoveDisplayObserver();
+        room.MoveNotifier.Attach(moveDisplayObserver);
+
         await Groups.AddToGroupAsync(room.WhitePlayer, room.RoomId);
         await Groups.AddToGroupAsync(room.BlackPlayer, room.RoomId);
-
 
         await Clients.Client(room.WhitePlayer).SendAsync("AssignColor", "white");
         await Clients.Client(room.BlackPlayer).SendAsync("AssignColor", "black");
@@ -129,7 +130,20 @@ public class ChessHub : Hub
 
         room.CurrentTurn = (room.CurrentTurn == "white") ? "black" : "white";
 
+        room.MoveNotifier.Notify(moveRecord);
+
         await Clients.Group(room.RoomId).SendAsync("UpdateBoard", room.Board, room.CurrentTurn);
+        await Clients.Group(room.RoomId).SendAsync("MoveMade", new
+        {
+            moveNumber = moveRecord.MoveNumber,
+            player = moveRecord.Player,
+            fromRow = moveRecord.FromRow,
+            fromCol = moveRecord.FromCol,
+            toRow = moveRecord.ToRow,
+            toCol = moveRecord.ToCol,
+            piece = moveRecord.Piece,
+            timestamp = moveRecord.Timestamp
+        });
 
 
 
@@ -147,18 +161,11 @@ public class ChessHub : Hub
             return;
         }
 
-        var gameHistory = new GameHistory
-        {
-            WhitePlayerId = room.WhiteUserDbId,
-            BlackPlayerId = room.BlackUserDbId,
-            WhitePlayerName = room.WhitePlayerName,
-            BlackPlayerName = room.BlackPlayerName,
-            Moves = room.Moves,
-            Result = reason,
-            StartTime = room.StartTime,
-            EndTime = DateTime.UtcNow,
-            EndReason = reason
-        };
+        var gameHistory = new GameHistoryBuilder()
+            .FromGameRoom(room)
+            .WithResult(reason)
+            .WithEndReason(reason)
+            .Build();
 
         await mongoService.GameHistories.InsertOneAsync(gameHistory);
 

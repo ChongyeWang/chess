@@ -76,6 +76,7 @@ function initializeConnection() {
         moveCountDiv.textContent = `Moves: 0`;
         endGameBtn.style.display = 'inline-block';
         findGameBtn.style.display = 'none';
+        clearMovesList();
         renderBoard(data.board);
         updateTurnIndicator();
     });
@@ -97,6 +98,10 @@ function initializeConnection() {
         moveCountDiv.textContent = `Moves: ${moveCount}`;
         renderBoard(gameBoard);
         updateTurnIndicator();
+    });
+
+    connection.on("MoveMade", (moveData) => {
+        displayMove(moveData);
     });
 
 
@@ -250,6 +255,48 @@ function updateTurnIndicator() {
     } else {
         turnIndicatorDiv.textContent = "Opponent's turn";
         turnIndicatorDiv.className = "turn-indicator opponent-turn";
+    }
+}
+
+function displayMove(moveData) {
+    const movesList = document.getElementById('moves-list');
+    if (!movesList) return;
+
+    const PIECES = {
+        'K': '♔', 'Q': '♕', 'R': '♖', 'B': '♗', 'N': '♘', 'P': '♙',
+        'k': '♚', 'q': '♛', 'r': '♜', 'b': '♝', 'n': '♞', 'p': '♟'
+    };
+
+    const cols = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    const fromCol = moveData.fromCol !== undefined ? moveData.fromCol : moveData.FromCol;
+    const fromRow = moveData.fromRow !== undefined ? moveData.fromRow : moveData.FromRow;
+    const toCol = moveData.toCol !== undefined ? moveData.toCol : moveData.ToCol;
+    const toRow = moveData.toRow !== undefined ? moveData.toRow : moveData.ToRow;
+    const piece = moveData.piece || moveData.Piece || '';
+    const player = moveData.player || moveData.Player || '';
+    const moveNumber = moveData.moveNumber || moveData.MoveNumber || 0;
+
+    const fromPos = `${cols[fromCol]}${8 - fromRow}`;
+    const toPos = `${cols[toCol]}${8 - toRow}`;
+    const pieceSymbol = PIECES[piece] || piece;
+
+    const moveItem = document.createElement('div');
+    moveItem.className = `move-item ${player}`;
+    
+    moveItem.innerHTML = `
+        <span class="move-number">${moveNumber}.</span>
+        <span class="move-notation">${pieceSymbol} ${fromPos} → ${toPos}</span>
+        <span style="color: #999; float: right; font-size: 0.85em;">${player === 'white' ? '⚪' : '⚫'}</span>
+    `;
+
+    movesList.appendChild(moveItem);
+    movesList.scrollTop = movesList.scrollHeight;
+}
+
+function clearMovesList() {
+    const movesList = document.getElementById('moves-list');
+    if (movesList) {
+        movesList.innerHTML = '';
     }
 }
 
