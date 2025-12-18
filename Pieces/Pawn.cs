@@ -2,6 +2,8 @@ public class Pawn : ChessPiece
 {
     public Pawn(string color, int xPosition, int yPosition) : base(color, xPosition, yPosition, color == "white" ? 'P' : 'p') { }
 
+   
+
     public override bool IsValidMove(int newX, int newY, Board board)
     {
         if (IsSameSquare(newX, newY))
@@ -47,6 +49,6 @@ public class Pawn : ChessPiece
         return false;
     }
 
-
+    
 
 }

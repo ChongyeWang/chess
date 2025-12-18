@@ -19,10 +19,7 @@ public class Bishop : ChessPiece
             return false;
         }
 
-        if (board.IsOccupied(XPosition, YPosition, newX, newY))
-        {
-            return false;
-        }
+        
 
         int dx = newX - XPosition;
         int dy = newY - YPosition;
@@ -32,6 +29,10 @@ public class Bishop : ChessPiece
             return false;
         }
 
+        if (board.IsOccupied(XPosition, YPosition, newX, newY))
+        {
+            return false;
+        }
 
 
         return true;

@@ -19,11 +19,6 @@ public class Queen : ChessPiece
             return false;
         }
 
-        if (board.IsOccupied(XPosition, YPosition, newX, newY))
-        {
-            return false;
-        }
-
         int dx = newX - XPosition;
         int dy = newY - YPosition;
 
@@ -31,6 +26,11 @@ public class Queen : ChessPiece
         bool isStraightMove = newX == XPosition || newY == YPosition;
 
         if (!isDiagonalMove && !isStraightMove)
+        {
+            return false;
+        }
+
+        if (board.IsOccupied(XPosition, YPosition, newX, newY))
         {
             return false;
         }

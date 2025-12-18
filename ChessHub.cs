@@ -61,6 +61,8 @@ public class ChessHub : Hub
 
     public async Task MovePiece(string fromRow, string fromCol, string toRow, string toCol)
     {
+        Console.WriteLine($"[MovePiece] START {fromRow},{fromCol} -> {toRow},{toCol} conn={Context.ConnectionId}");
+
         string playerId = Context.ConnectionId;
         var room = gameManager.GetRoomByPlayerId(playerId);
 
@@ -83,9 +85,12 @@ public class ChessHub : Hub
         int toR = int.Parse(toRow);
         int toC = int.Parse(toCol);
 
+        Console.WriteLine("A parsed/turn ok");
 
 
-        var piece = room.Board.FirstOrDefault(p => p.xPosition == fromC && p.yPosition == fromR);
+        var piece = room.Board.GetPieceAtPosition(fromC, fromR);
+
+        Console.WriteLine("B got piece");
 
         if (piece == null)
         {
@@ -93,27 +98,19 @@ public class ChessHub : Hub
             return;
         }
 
-        if (piece.color != playerColor)
+        if (piece.Color != playerColor)
         {
             await Clients.Caller.SendAsync("Error", "You can't move your opponent's piece!");
             return;
         }
 
-        bool isValidMove = gameManager.isMoveValid(piece, toC, toR, room.Board);
-        if (!isValidMove)
+        bool moved = room.Board.MovePiece(fromC, fromR, toC, toR, playerColor);
+        if (!moved)
         {
-            await Clients.Caller.SendAsync("Error", "Invalid move");
+            await Clients.Caller.SendAsync("Error", "Invalid move for that piece");
             return;
         }
 
-        var captured = room.Board.FirstOrDefault(p => p.xPosition == toC && p.yPosition == toR);
-        if (captured != null)
-        {
-            room.Board.Remove(captured);
-        }
-
-        piece.xPosition = toC;
-        piece.yPosition = toR;
 
         var moveRecord = new MoveRecord
         {
@@ -123,16 +120,48 @@ public class ChessHub : Hub
             FromCol = fromC,
             ToRow = toR,
             ToCol = toC,
-            Piece = piece.type,
+            Piece = piece.Symbol.ToString(),
             Timestamp = DateTime.UtcNow
         };
         room.Moves.Add(moveRecord);
+        
+        Console.WriteLine("C move recorded");
 
-        room.CurrentTurn = (room.CurrentTurn == "white") ? "black" : "white";
+        string opponentColor = (playerColor == "white") ? "black" : "white";
+        bool isCheck = room.Board.IsCheck(opponentColor);
+        Console.WriteLine($"D isCheck={isCheck}");
+        bool HasLegalMoves = room.Board.HasLegalMoves(opponentColor);
+        Console.WriteLine($"E hasLegalMoves={HasLegalMoves}");
+
+
+        if(isCheck && !HasLegalMoves)
+        {
+            await Clients.Group(room.RoomId).SendAsync("UpdateBoard", room.Board, "Game Over");
+            await Clients.Group(room.RoomId).SendAsync("Game Over", new {
+                winner = playerColor,
+                reason = "checkmate"
+            });
+            await EndGame($"Checkmate. {playerColor} wins.");
+            return;
+        }
+
+        if(!isCheck && !HasLegalMoves)
+        {
+            await Clients.Group(room.RoomId).SendAsync("UpdateBoard", room.Board, "Game Over");
+            await Clients.Group(room.RoomId).SendAsync("Game Over", new {
+                winner = "Draw",
+                reason = "stalemate"
+            });
+            await EndGame("Stalemate. It's a draw.");
+            return;
+        }
+        room.CurrentTurn = opponentColor;
 
         room.MoveNotifier.Notify(moveRecord);
+        Console.WriteLine("F move notified");
 
         await Clients.Group(room.RoomId).SendAsync("UpdateBoard", room.Board, room.CurrentTurn);
+        Console.WriteLine("G board updated");
         await Clients.Group(room.RoomId).SendAsync("MoveMade", new
         {
             moveNumber = moveRecord.MoveNumber,
@@ -145,6 +174,12 @@ public class ChessHub : Hub
             timestamp = moveRecord.Timestamp
         });
 
+        if(isCheck)
+        {
+            await Clients.Group(room.RoomId).SendAsync("Check", opponentColor);
+        }
+
+        Console.WriteLine("[MovePiece] END (about to return)");
 
 
     }

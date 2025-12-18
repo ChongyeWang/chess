@@ -13,16 +13,23 @@ public abstract class ChessPiece
         Symbol = symbol;
     }
 
+    public virtual ChessPiece Clone()
+    {
+        return (ChessPiece)this.MemberwiseClone();
+    }
+
     public void Move(int newX, int newY)
     {
         XPosition = newX;
         YPosition = newY;
     }
 
+    
 
     protected bool IsSameSquare(int newX, int newY)
     {
         return XPosition == newX && YPosition == newY;
     }
     public abstract bool IsValidMove(int newX, int newY, Board board);
+    
 }

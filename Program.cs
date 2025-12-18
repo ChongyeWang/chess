@@ -1,12 +1,16 @@
 using MongoDB.Driver;
-
+using System.Text.Json;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var mongoConnectionString = "mongodb+srv://wangchongye125:test123456@cluster0.of7cz.mongodb.net/";
 var databaseName = "chess_game";
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddJsonProtocol(options =>
+    {
+        options.PayloadSerializerOptions.PropertyNamingPolicy = null;
+    });
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
@@ -138,7 +142,7 @@ app.UseRouting();
 
 app.UseEndpoints(endpoints =>
 {
-    endpoints.MapHub<ChessHub>("/chesshub");
+    endpoints.MapHub<ChessHub>("/Chesshub");
 });
 
 app.Run();

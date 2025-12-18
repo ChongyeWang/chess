@@ -119,6 +119,22 @@ h1 {
     margin-bottom: 8px;
 }
 
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(20, 20, 20, 0.92);
+  color: white;
+  font-weight: 700;
+  z-index: 2000;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+}
+
+.toast.hidden { display: none; }
+
+
 .player-color {
     font-size: 1.1em;
     font-weight: bold;
@@ -276,6 +292,7 @@ h1 {
     cursor: pointer;
     transition: all 0.2s ease;
     user-select: none;
+    outline: white;
 }
 
 .square.light {

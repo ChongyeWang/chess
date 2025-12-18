@@ -20,7 +20,6 @@ async function loadHistory() {
         }
 
         const games = await response.json();
-        console.log('Games loaded:', games);
         
         window.loadedGames = games;
 
